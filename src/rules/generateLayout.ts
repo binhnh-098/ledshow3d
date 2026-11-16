@@ -4,11 +4,7 @@ import { generateLighting } from "./generateLighting";
 import { generateTruss } from "./trussGenerators";
 import { computeLedSpecs } from "../data/ledPresets";
 
-const GUESTS_PER_TABLE = 10;
 const TABLE_RADIUS = 1.1;
-const TABLE_SPACING_X = 3.2;
-const TABLE_SPACING_Z = 3.2;
-const AISLE_WIDTH = 2.4;
 
 /**
  * Hàm thuần (pure function): cùng input luôn ra cùng output.
@@ -55,13 +51,14 @@ export function generateLayout(config: EventConfig): StageLayout {
   };
 
   // --- Bàn ghế: xếp 2 khối trái/phải, chừa lối đi giữa, lùi dần về phía khán giả ---
-  const tableCount = Math.ceil(soKhach / GUESTS_PER_TABLE);
+  const { khachMoiBan, khoangCachBan, loiDiGiua } = config;
+  const tableCount = Math.ceil(soKhach / khachMoiBan);
   const usableDepth = chieuDai - stageDepth - 6; // chừa khoảng cách an toàn với sân khấu
   const colsPerSide = Math.max(
     1,
-    Math.floor((chieuNgang / 2 - AISLE_WIDTH / 2) / TABLE_SPACING_X)
+    Math.floor((chieuNgang / 2 - loiDiGiua / 2) / khoangCachBan)
   );
-  const rows = Math.max(1, Math.floor(usableDepth / TABLE_SPACING_Z));
+  const rows = Math.max(1, Math.floor(usableDepth / khoangCachBan));
 
   const tables: TableSeat[] = [];
   let placed = 0;
@@ -70,13 +67,13 @@ export function generateLayout(config: EventConfig): StageLayout {
   for (let row = 0; row < rows && placed < tableCount; row++) {
     for (let side = -1; side <= 1; side += 2) {
       for (let col = 0; col < colsPerSide && placed < tableCount; col++) {
-        const x = side * (AISLE_WIDTH / 2 + TABLE_SPACING_X * (col + 0.5));
-        const z = zStart + row * TABLE_SPACING_Z;
+        const x = side * (loiDiGiua / 2 + khoangCachBan * (col + 0.5));
+        const z = zStart + row * khoangCachBan;
         tables.push({
           id: `table-${row}-${side}-${col}`,
           tableCenter: { x, y: 0, z },
           tableRadius: TABLE_RADIUS,
-          chairCount: GUESTS_PER_TABLE,
+          chairCount: khachMoiBan,
         });
         placed++;
       }

@@ -36,6 +36,10 @@ export interface EventConfig {
   mucDauTu: MucDauTu;
   ketCauChinh: KetCauChinh;
   ledPresetId: string;
+  // 05 Chỗ ngồi
+  khachMoiBan: number; // số khách / 1 bàn tròn
+  khoangCachBan: number; // m, khoảng cách tâm giữa 2 bàn liền kề
+  loiDiGiua: number; // m, bề rộng lối đi chính giữa 2 khối bàn
 }
 
 export const DEFAULT_CONFIG: EventConfig = {
@@ -47,4 +51,7 @@ export const DEFAULT_CONFIG: EventConfig = {
   mucDauTu: "tieu-chuan",
   ketCauChinh: "tu-chon",
   ledPresetId: "p3.91",
+  khachMoiBan: 10,
+  khoangCachBan: 3.2,
+  loiDiGiua: 2.4,
 };

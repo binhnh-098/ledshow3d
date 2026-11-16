@@ -6,9 +6,15 @@ export interface Segment {
   to: THREE.Vector3;
 }
 
+export interface Joint {
+  position: THREE.Vector3;
+  radius: number;
+}
+
 export interface TrussGeometryResult {
   chordSegments: Segment[];
   webSegments: Segment[];
+  joints: Joint[];
 }
 
 const MODULE_SIZE = 1.2; // khoảng cách giữa các mắt giằng — gần đúng module truss thật (0,5-2m)
@@ -24,6 +30,19 @@ export function buildTrussGeometry(
 ): TrussGeometryResult {
   const chordSegments: Segment[] = [];
   const webSegments: Segment[] = [];
+  // Gom các đầu mút trùng nhau (cùng toạ độ, làm tròn) thành 1 "khớp" —
+  // mỗi khớp lưu lại kích thước truss lớn nhất quy tụ về đó, để quả cầu
+  // che khớp đủ lớn bao trọn tiết diện tam giác của mọi đoạn gặp nhau.
+  const jointMap = new Map<string, { position: THREE.Vector3; maxThickness: number }>();
+  function registerJoint(p: THREE.Vector3, thickness: number) {
+    const key = `${p.x.toFixed(2)}|${p.y.toFixed(2)}|${p.z.toFixed(2)}`;
+    const existing = jointMap.get(key);
+    if (existing) {
+      existing.maxThickness = Math.max(existing.maxThickness, thickness);
+    } else {
+      jointMap.set(key, { position: p.clone(), maxThickness: thickness });
+    }
+  }
 
   for (const beam of beams) {
     const from = new THREE.Vector3(beam.from.x, beam.from.y, beam.from.z);
@@ -32,6 +51,9 @@ export function buildTrussGeometry(
     const length = dir.length();
     if (length < 0.001) continue;
     dir.normalize();
+
+    registerJoint(from, beam.thickness);
+    registerJoint(to, beam.thickness);
 
     const worldUp = new THREE.Vector3(0, 1, 0);
     const helper = Math.abs(dir.dot(worldUp)) > 0.95
@@ -83,5 +105,12 @@ export function buildTrussGeometry(
     }
   }
 
-  return { chordSegments, webSegments };
+  const joints: Joint[] = Array.from(jointMap.values()).map((j) => ({
+    position: j.position,
+    // Bán kính ngoại tiếp tam giác tiết diện ≈ 0.58*s — lấy dư 0.68*s để
+    // chắc chắn che kín mọi đầu ống dù các đoạn gặp nhau xoay hướng khác nhau.
+    radius: j.maxThickness * 0.68,
+  }));
+
+  return { chordSegments, webSegments, joints };
 }
